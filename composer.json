@@ -1,4 +1,7 @@
 {
+	"name": "sk/centra-backend-task",
+	"description": "Kanban board for github",
+	"version": "0.0.1",
 	"autoload": {
 		"classmap": [
 			"src/classes"
@@ -11,5 +14,5 @@
 		"michelf/php-markdown": "^1.6",
 		"phpunit/phpunit": "5.0.*"
 	},
-	"minimum-stability": "dev"
+	"minimum-stability": "stable"
 }
