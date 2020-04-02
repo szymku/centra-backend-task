@@ -1,4 +1,8 @@
-<?php
+<?php declare(strict_types=1);
+
+namespace App\KanbanBoard;
+
+use App\Utils;
 
 class GithubClient
 {
@@ -8,10 +12,8 @@ class GithubClient
 
     public function __construct($token, $account)
     {
-        require '../../vendor/autoload.php';
         $this->account = $account;
-        $this->client= new \Github\Client(new \Github\HttpClient\CachedHttpClient(array('cache_dir' => '/tmp/github-api-cache')));
-        $this->client->authenticate($token, \Github\Client::AUTH_HTTP_TOKEN);
+        $this->client= new \Github\Client(new \Github\HttpClient\CachedHttpClient(['cache_dir' => '/tmp/github-api-cache']));
         $this->milestone_api = $this->client->api('issues')->milestones();
     }
 
@@ -22,7 +24,7 @@ class GithubClient
 
     public function issues($repository, $milestone_id)
     {
-        $issue_parameters = array('milestone' => $milestone_id, 'state' => 'all');
+        $issue_parameters = ['milestone' => $milestone_id, 'state' => 'all'];
         return $this->client->api('issue')->all($this->account, $repository, $issue_parameters);
     }
 }
