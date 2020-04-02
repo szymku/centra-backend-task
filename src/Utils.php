@@ -1,7 +1,7 @@
-<?php
-namespace KanbanBoard;
+<?php declare(strict_types=1);
+namespace App;
 
-class Utilities
+class Utils
 {
 	private function __construct() {
 	}
@@ -20,9 +20,9 @@ class Utilities
 		return is_array($array) && array_key_exists($key, $array) && !empty($array[$key]);
 	}
 
-	public static function dump($data) {
+	public static function dump(...$data) {
 		echo '<pre>';
-		var_dump($data);
+		var_dump(...$data);
 		echo '</pre>';
 	}
 }

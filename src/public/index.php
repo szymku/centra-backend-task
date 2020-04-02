@@ -1,19 +1,28 @@
-<?php
-use KanbanBoard\Authentication;
-use KanbanBoard\GithubActual;
-use KanbanBoard\Utilities;
+<?php declare(strict_types=1);
 
-require '../classes/KanbanBoard/Github.php';
-require '../classes/Utilities.php';
-require '../classes/KanbanBoard/Authentication.php';
+use App\KanbanBoard\Authentication;
+use App\KanbanBoard\GithubActual;
+use App\KanbanBoard\Application;
+use App\KanbanBoard\GithubClient;
+use App\Utils;
+use Dotenv\Dotenv;
+use KanbanBoard\Login;
 
-$repositories = explode('|', Utilities::env('GH_REPOSITORIES'));
-$authentication = new \KanbanBoard\Login();
+require __DIR__ . '/../../vendor/autoload.php';
+
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../..');
+$dotenv->load();
+
+$repositories = explode('|', Utils::env('GH_REPOSITORIES'));
+
+$authentication = new Authentication();
 $token = $authentication->login();
-$github = new GithubClient($token, Utilities::env('GH_ACCOUNT'));
-$board = new \KanbanBoard\Application($github, $repositories, array('waiting-for-feedback'));
+$github = new GithubClient($token, Utils::env('GH_ACCOUNT'));
+$board = new Application($github, $repositories, ['waiting-for-feedback']);
 $data = $board->board();
-$m = new Mustache_Engine(array(
+
+Utils::dump($data);exit();
+$m = new Mustache_Engine([
 	'loader' => new Mustache_Loader_FilesystemLoader('../views'),
-));
-echo $m->render('index', array('milestones' => $data));
+]);
+echo $m->render('index', ['milestones' => $data]);
