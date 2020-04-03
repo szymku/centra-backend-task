@@ -3,31 +3,30 @@
 namespace App\KanbanBoard;
 
 use App\Utils;
-use Github\Client;
-use vierbergenlars\SemVer\version;
-
-use vierbergenlars\SemVer\expression;
-use vierbergenlars\SemVer\SemVerException;
-use \Michelf\Markdown;
+use Michelf\Markdown;
 
 class Application
 {
-    private GithubClient $github;
+    private GithubClient $github_client;
     private array $repositories;
     private array $paused_labels;
 
-    public function __construct(GithubClient $github, array $repositories, array $paused_labels = [])
+    public function __construct(GithubClient $github_client, array $repositories, array $paused_labels = [])
     {
-        $this->github = $github;
+        $this->github_client = $github_client;
         $this->repositories = $repositories;
         $this->paused_labels = $paused_labels;
     }
 
-    public function board()
+    public function board(): array
     {
         $ms = [];
+        $milestones = [];
+
         foreach ($this->repositories as $repository) {
-            foreach ($this->github->milestones($repository) as $data) {
+            foreach ($this->github_client->milestones($repository) as $data) {
+
+
                 $ms[$data['title']] = $data;
                 $ms[$data['title']]['repository'] = $repository;
             }
@@ -36,7 +35,7 @@ class Application
         ksort($ms);
         foreach ($ms as $name => $data) {
             $issues = $this->issues($data['repository'], $data['number']);
-            $percent = self::_percent($data['closed_issues'], $data['open_issues']);
+            $percent = self::percent($data['closed_issues'], $data['open_issues']);
             if ($percent) {
                 $milestones[] = [
                     'milestone' => $name,
@@ -51,9 +50,9 @@ class Application
         return $milestones;
     }
 
-    private function issues($repository, $milestone_id)
+    private function issues($repository, $milestone_id): array
     {
-        $i = $this->github->issues($repository, $milestone_id);
+        $i = $this->github_client->issues($repository, $milestone_id);
 
         $issues = [];
         foreach ($i as $ii) {
@@ -61,40 +60,39 @@ class Application
                 continue;
             }
             $issues[$ii['state'] === 'closed' ? 'completed' : (($ii['assignee']) ? 'active' : 'queued')][] = [
-                'id' => $ii['id'], 'number' => $ii['number'],
+                'id' => $ii['id'],
+                'number' => $ii['number'],
                 'title' => $ii['title'],
                 'body' => Markdown::defaultTransform($ii['body']),
                 'url' => $ii['html_url'],
-                'assignee' => (is_array($ii) && array_key_exists('assignee', $ii) && !empty($ii['assignee'])) ? $ii['assignee']['avatar_url'] . '?s=16' : NULL,
-                'paused' => self::labels_match($ii, $this->paused_labels),
-                'progress' => self::_percent(
+                'assignee' => (is_array($ii) && array_key_exists(
+                        'assignee',
+                        $ii
+                    ) && !empty($ii['assignee'])) ? $ii['assignee']['avatar_url'] . '?s=16' : null,
+                'paused' => $this->labelsMatch($ii, $this->paused_labels),
+                'progress' => $this->percent(
                     substr_count(strtolower($ii['body']), '[x]'),
-                    substr_count(strtolower($ii['body']), '[ ]')),
+                    substr_count(strtolower($ii['body']), '[ ]')
+                ),
                 'closed' => $ii['closed_at']
             ];
         }
 
-
         if (isset($issues['active'])) {
-            usort($issues['active'], function ($a, $b) {
-                return count($a['paused']) - count($b['paused']) === 0 ? strcmp($a['title'], $b['title']) : count($a['paused']) - count($b['paused']);
-            });
+            usort(
+                $issues['active'],
+                function ($a, $b) {
+                    return count($a['paused']) - count($b['paused']) === 0 ? strcmp($a['title'], $b['title']) : count(
+                            $a['paused']
+                        ) - count($b['paused']);
+                }
+            );
         }
 
         return $issues;
     }
 
-    private static function _state($issue)
-    {
-        if ($issue['state'] === 'closed')
-            return 'completed';
-        else if (Utils::hasValue($issue, 'assignee') && count($issue['assignee']) > 0)
-            return 'active';
-        else
-            return 'queued';
-    }
-
-    private static function labels_match($issue, $needles)
+    private function labelsMatch($issue, $needles)
     {
         if (Utils::hasValue($issue, 'labels')) {
             foreach ($issue['labels'] as $label) {
@@ -104,10 +102,9 @@ class Application
             }
         }
         return [];
-
     }
 
-    private static function _percent($complete, $remaining)
+    private function percent($complete, $remaining)
     {
         $total = $complete + $remaining;
         if ($total > 0) {
