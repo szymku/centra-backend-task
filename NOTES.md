@@ -6,7 +6,13 @@
 3. Run original code
     - add .env
 4. Refactor
-5. Run some server - digital
+5. Run some server - digital ocean maybe
 
-## Q&A
+
+## Questions and doubts
 ### What is github kanban board?
+### DI or not
+
+
+#### First things first
+#### Good enough :)
