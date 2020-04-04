@@ -5,7 +5,7 @@ namespace App\KanbanBoard;
 use App\Utils;
 use Michelf\Markdown;
 
-class Application
+class Board
 {
     private GithubClient $github_client;
     private array $repositories;
@@ -18,63 +18,54 @@ class Application
         $this->paused_labels = $paused_labels;
     }
 
-    public function board(): array
+    public function data(): array
     {
-        $ms = [];
         $milestones = [];
 
         foreach ($this->repositories as $repository) {
             foreach ($this->github_client->milestones($repository) as $data) {
-
-
-                $ms[$data['title']] = $data;
-                $ms[$data['title']]['repository'] = $repository;
+                $issues = $this->issues($repository, $data['number']);
+                $percent = $this->percent($data['closed_issues'], $data['open_issues']);
+                if ($percent) {
+                    $milestones[$data['title']] = [
+                        'milestone' => $data['title'],
+                        'url' => $data['html_url'],
+                        'progress' => $percent,
+                        'queued' => $issues['queued'],
+                        'active' => $issues['active'],
+                        'completed' => $issues['completed']
+                    ];
+                }
             }
         }
+        ksort($milestones);
 
-        ksort($ms);
-        foreach ($ms as $name => $data) {
-            $issues = $this->issues($data['repository'], $data['number']);
-            $percent = self::percent($data['closed_issues'], $data['open_issues']);
-            if ($percent) {
-                $milestones[] = [
-                    'milestone' => $name,
-                    'url' => $data['html_url'],
-                    'progress' => $percent,
-                    'queued' => $issues['queued'],
-                    'active' => $issues['active'],
-                    'completed' => $issues['completed']
-                ];
-            }
-        }
-        return $milestones;
+        return array_values($milestones);
     }
 
-    private function issues($repository, $milestone_id): array
+    private function issues(string $repository, int $milestone_id): array
     {
-        $i = $this->github_client->issues($repository, $milestone_id);
-
         $issues = [];
-        foreach ($i as $ii) {
-            if (isset($ii['pull_request'])) {
+        foreach ($this->github_client->issues($repository, $milestone_id) as $issue) {
+            if (isset($issue['pull_request'])) {
                 continue;
             }
-            $issues[$ii['state'] === 'closed' ? 'completed' : (($ii['assignee']) ? 'active' : 'queued')][] = [
-                'id' => $ii['id'],
-                'number' => $ii['number'],
-                'title' => $ii['title'],
-                'body' => Markdown::defaultTransform($ii['body']),
-                'url' => $ii['html_url'],
-                'assignee' => (is_array($ii) && array_key_exists(
+            $issues[$issue['state'] === 'closed' ? 'completed' : (($issue['assignee']) ? 'active' : 'queued')][] = [
+                'id' => $issue['id'],
+                'number' => $issue['number'],
+                'title' => $issue['title'],
+                'body' => Markdown::defaultTransform($issue['body']),
+                'url' => $issue['html_url'],
+                'assignee' => (is_array($issue) && array_key_exists(
                         'assignee',
-                        $ii
-                    ) && !empty($ii['assignee'])) ? $ii['assignee']['avatar_url'] . '?s=16' : null,
-                'paused' => $this->labelsMatch($ii, $this->paused_labels),
+                        $issue
+                    ) && !empty($issue['assignee'])) ? $issue['assignee']['avatar_url'] . '?s=16' : null,
+                'paused' => $this->labelsMatch($issue, $this->paused_labels),
                 'progress' => $this->percent(
-                    substr_count(strtolower($ii['body']), '[x]'),
-                    substr_count(strtolower($ii['body']), '[ ]')
+                    substr_count(strtolower($issue['body']), '[x]'),
+                    substr_count(strtolower($issue['body']), '[ ]')
                 ),
-                'closed' => $ii['closed_at']
+                'closed' => $issue['closed_at']
             ];
         }
 
@@ -104,7 +95,7 @@ class Application
         return [];
     }
 
-    private function percent($complete, $remaining)
+    private function percent(int $complete, int $remaining): array
     {
         $total = $complete + $remaining;
         if ($total > 0) {
