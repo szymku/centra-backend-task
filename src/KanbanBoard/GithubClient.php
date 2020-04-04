@@ -4,22 +4,21 @@ namespace App\KanbanBoard;
 
 use Github\Api\Issue;
 use Github\Client;
-use Github\HttpClient\CachedHttpClient;
 
 class GithubClient
 {
     private Client $client;
     private string $account;
 
-    public function __construct(string $account)
+    public function __construct(string $account, Client $client)
     {
         $this->account = $account;
-        $this->client = new Client(new CachedHttpClient(['cache_dir' => '/tmp/github-api-cache']));
+        $this->client = $client;
     }
 
     public function milestones(string $repository): array
     {
-        return $this->issueApi()->milestones()->all($this->account, $repository);
+        return $this->issueApi()->milestones()->all($this->account, $repository, ['state' => 'all']);
     }
 
     public function issues(string $repository, int $milestone_id): array

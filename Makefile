@@ -4,16 +4,16 @@ SERVER_IMAGE_NAME = nice_one
 
 .PHONY: tests
 
-run: build-image composer-update run-server
+run: build-image composer-install run-server
 
 build-image:
 	docker build -t ${DOCKER_IMAGE} --build-arg USER_ID=$$(id -u) --build-arg GROUP_ID=$$(id -g) .
 
-composer-update:
-	docker run --rm -v $$PWD:/app -w /app ${DOCKER_IMAGE} update
-
 composer-install:
 	docker run --rm -v $$PWD:/app -w /app ${DOCKER_IMAGE} composer install
+
+composer-update:
+	docker run --rm -v $$PWD:/app -w /app ${DOCKER_IMAGE} update
 
 run-server:
 	docker run --name ${SERVER_IMAGE_NAME} --rm -v $$PWD:/app -w /app -p ${SERVER_PORT}:${SERVER_PORT} ${DOCKER_IMAGE} \
@@ -27,6 +27,7 @@ fix-code:
 
 tests:
 	docker run --rm -v $$PWD:/app -w /app ${DOCKER_IMAGE} vendor/bin/phpunit tests
+	docker run --rm -v $$PWD:/app -w /app ${DOCKER_IMAGE} vendor/bin/php-cs-fixer fix --dry-run --allow-risky=yes
 
 bash:
 	docker run --rm -v $$PWD:/app -w /app -ti ${DOCKER_IMAGE} bash
