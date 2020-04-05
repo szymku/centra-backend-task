@@ -22,17 +22,18 @@ class Board
         $milestones = [];
 
         foreach ($this->repositories as $repository) {
-            foreach ($this->github_client->milestones($repository) as $data) {
-                $issues = $this->issues($repository, $data['number']);
-                $percent = $this->percent($data['closed_issues'], $data['open_issues']);
+            foreach ($this->github_client->milestones($repository) as $milestone) {
+                $issues = $this->issues($repository, $milestone['number']);
+                $percent = $this->percent($milestone['closed_issues'], $milestone['open_issues']);
+
                 if ($percent) {
-                    $milestones[$data['title']] = [
-                        'milestone' => $data['title'],
-                        'url' => $data['html_url'],
+                    $milestones[$milestone['title']] = [
+                        'milestone' => $milestone['title'],
+                        'url' => $milestone['html_url'],
                         'progress' => $percent,
-                        'queued' => $issues['queued'],
-                        'active' => $issues['active'],
-                        'completed' => $issues['completed']
+                        'queued' => $issues['queued'] ?? null,
+                        'active' => $issues['active'] ?? null,
+                        'completed' => $issues['completed'] ?? null
                     ];
                 }
             }
