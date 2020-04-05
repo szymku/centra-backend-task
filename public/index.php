@@ -11,7 +11,6 @@ use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 require __DIR__ . '/../vendor/autoload.php';
 
 ini_set('session.cookie_httponly', "1");
-//ini_set('session.cookie_secure', "1");
 
 try {
     Dotenv::createImmutable(__DIR__ . '/../')->load();
