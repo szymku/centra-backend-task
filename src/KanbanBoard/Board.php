@@ -3,7 +3,6 @@
 namespace App\KanbanBoard;
 
 use App\Utils;
-use Michelf\Markdown;
 
 class Board
 {
@@ -18,7 +17,7 @@ class Board
         $this->paused_labels = $paused_labels;
     }
 
-    public function data(): array
+    public function milestones(): array
     {
         $milestones = [];
 
@@ -50,48 +49,41 @@ class Board
             if (isset($issue['pull_request'])) {
                 continue;
             }
-            $issues[$issue['state'] === 'closed' ? 'completed' : (($issue['assignee']) ? 'active' : 'queued')][] = [
-                'id' => $issue['id'],
-                'number' => $issue['number'],
+            $issues[$this->adjustIssueState($issue)][] = [
                 'title' => $issue['title'],
-                'body' => Markdown::defaultTransform($issue['body']),
                 'url' => $issue['html_url'],
-                'assignee' => (is_array($issue) && array_key_exists(
-                        'assignee',
-                        $issue
-                    ) && !empty($issue['assignee'])) ? $issue['assignee']['avatar_url'] . '?s=16' : null,
-                'paused' => $this->labelsMatch($issue, $this->paused_labels),
-                'progress' => $this->percent(
-                    substr_count(strtolower($issue['body']), '[x]'),
-                    substr_count(strtolower($issue['body']), '[ ]')
-                ),
-                'closed' => $issue['closed_at']
+                'assignee' => $this->adjustAvatar($issue),
+                'paused' => $this->labelsMatch($issue),
             ];
         }
 
         if (isset($issues['active'])) {
-            usort(
-                $issues['active'],
-                function ($a, $b) {
-                    return count($a['paused']) - count($b['paused']) === 0 ? strcmp($a['title'], $b['title']) : count(
-                            $a['paused']
-                        ) - count($b['paused']);
-                }
-            );
+            $issues['active'] = $this->movePausedIssuesDownAndSortAlphabetically($issues['active']);
         }
 
         return $issues;
     }
 
-    private function labelsMatch($issue, $needles)
+    private function adjustIssueState(array $issue): string
+    {
+        return $issue['state'] === 'closed' ? 'completed' : (($issue['assignee']) ? 'active' : 'queued');
+    }
+
+    private function adjustAvatar(array $issue): ?string
+    {
+        return Utils::hasValue($issue, 'assignee') ? $issue['assignee']['avatar_url'] . '?s=16' : null;
+    }
+
+    private function labelsMatch(array $issue): array
     {
         if (Utils::hasValue($issue, 'labels')) {
             foreach ($issue['labels'] as $label) {
-                if (in_array($label['name'], $needles)) {
+                if (in_array($label['name'], $this->paused_labels)) {
                     return [$label['name']];
                 }
             }
         }
+
         return [];
     }
 
@@ -99,14 +91,23 @@ class Board
     {
         $total = $complete + $remaining;
         if ($total > 0) {
-            $percent = ($complete OR $remaining) ? round($complete / $total * 100) : 0;
-            return [
-                'total' => $total,
-                'complete' => $complete,
-                'remaining' => $remaining,
-                'percent' => $percent
-            ];
+            return ['percent' => round($complete / $total * 100)];
         }
+
         return [];
+    }
+
+    private function movePausedIssuesDownAndSortAlphabetically(array $activeIssues): array
+    {
+        usort(
+            $activeIssues,
+            function ($a, $b) {
+                return count($a['paused']) - count($b['paused']) === 0 ?
+                    strcmp($a['title'], $b['title']) :
+                    count($a['paused']) - count($b['paused']);
+            }
+        );
+
+        return $activeIssues;
     }
 }

@@ -16,7 +16,7 @@ class Authorization
         $this->client_secret = $clientSecret;
     }
 
-    public function accessToken()
+    public function accessToken(): string
     {
         session_start();
         $token = null;

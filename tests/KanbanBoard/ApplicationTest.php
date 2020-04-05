@@ -19,7 +19,7 @@ class ApplicationTest extends TestCase
         $gitlabClientMock = Mockery::mock(GithubClient::class);
         $application = new Board($gitlabClientMock, [], []);
 
-        $this->assertEquals([], $application->data());
+        $this->assertEquals([], $application->milestones());
     }
 
     public function testBoardWhenRepositoryHasNoMilestones()
@@ -33,7 +33,7 @@ class ApplicationTest extends TestCase
 
         $application = new Board($gitlabClientMock, ['my_repository'], []);
 
-        $this->assertEquals([], $application->data());
+        $this->assertEquals([], $application->milestones());
     }
 
     public function testBoardRepositoryWithMilestonesWithoutIssues()
@@ -62,6 +62,6 @@ class ApplicationTest extends TestCase
 
         $application = new Board($gitlabClientMock, ['my_repository'], []);
 
-        $this->assertEquals([], $application->data());
+        $this->assertEquals([], $application->milestones());
     }
 }
