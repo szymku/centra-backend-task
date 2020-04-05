@@ -29,6 +29,6 @@ If we want to run a command in docker(e.g. add a package to composer.json) we ca
 `docker run --rm -v $PWD:/app -w /app php74 composer require vlucas/phpdotenv`
 
 ## Links
-[Repo in Github](https://github.com/szymku/centra-backend-task)
-[Project board](https://github.com/szymku/centra-backend-task/projects/1)
+[Repo in Github](https://github.com/szymku/centra-backend-task)  
+[Project board](https://github.com/szymku/centra-backend-task/projects/1)  
 [Milestones](https://github.com/szymku/centra-backend-task/milestones)
