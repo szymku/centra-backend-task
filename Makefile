@@ -26,8 +26,8 @@ fix-code:
 	docker run --rm -v $$PWD:/app -w /app ${DOCKER_IMAGE} vendor/bin/php-cs-fixer fix --allow-risky=yes
 
 tests:
-	docker run --rm -v $$PWD:/app -w /app ${DOCKER_IMAGE} vendor/bin/phpunit tests
 	docker run --rm -v $$PWD:/app -w /app ${DOCKER_IMAGE} vendor/bin/php-cs-fixer fix --dry-run --allow-risky=yes
+	docker run --rm -v $$PWD:/app -w /app ${DOCKER_IMAGE} vendor/bin/phpunit tests
 
 bash:
 	docker run --rm -v $$PWD:/app -w /app -ti ${DOCKER_IMAGE} bash

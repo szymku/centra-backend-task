@@ -6,7 +6,7 @@ use App\KanbanBoard\GithubClient;
 use App\Utils;
 use Dotenv\Dotenv;
 use Github\Client;
-use Github\HttpClient\CachedHttpClient;
+use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -24,17 +24,18 @@ try {
 
     $token = (new Authorization($client_id, $client_secret))->accessToken();
 
-    $github_api_client = new Client(new CachedHttpClient());
+    $github_api_client = new Client();
+    $github_api_client->addCache(new FilesystemAdapter());
     $github_api_client->authenticate($token, null, Client::AUTH_HTTP_TOKEN);
 
     $github = new GithubClient($github_account, $github_api_client);
-    $data = (new Board($github, $repositories, $paused_labels))->data();
+    $milestones = (new Board($github, $repositories, $paused_labels))->milestones();
 
     echo (new Mustache_Engine(
         [
             'loader' => new Mustache_Loader_FilesystemLoader('views'),
         ]
-    ))->render('index', ['milestones' => $data]);
+    ))->render('index', ['milestones' => $milestones]);
 } catch (\Throwable $e) {
     Utils::logError(__DIR__ . '/../log/log.log', $e);
     header('HTTP/1.1 500 Internal Server Error');

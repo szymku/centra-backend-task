@@ -21,7 +21,7 @@ class Utils
         return $value;
     }
 
-    public static function hasValue(array $array, $key)
+    public static function hasValue(array $array, $key): bool
     {
         return array_key_exists($key, $array) && !empty($array[$key]);
     }
